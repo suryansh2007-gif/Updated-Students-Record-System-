@@ -1,0 +1,263 @@
+
+FILENAME = "students.txt"
+
+
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+def print_banner():
+    banner = """
+  ======================================================================
+   ___ _____ _   _ ___  ___ _  _ _____   ___ ___ ___ ___  ___ ___  
+  / __|_   _| | | |   \| __| \| |_   _| | _ \ __/ __/ _ \| _ \   \ 
+  \__ \ | | | |_| | |) | _|| .` | | |   |   / _| (_| (_) |   / |) |
+  |___/ |_|  \___/|___|_|\_| |_|   |_|_\___\___\___/|_|_\___/ 
+                       SYSTEM  (HOSTEL EDITION)
+  ======================================================================
+    """
+    print(banner)
+
+
+# ---------------------------------------------------------------------------
+# File I/O Operations
+# ---------------------------------------------------------------------------
+def load_records():
+    """Loads records from the text file into a dictionary."""
+    records = {}
+    try:
+        with open(FILENAME, "r") as file:
+            for line in file:
+                line = line.strip()
+                if line:
+                    parts = line.split(",")
+                    if len(parts) != 6:
+                        # Skip malformed lines
+                        continue
+                    name, room_no, reg_no, email, password, home_state = parts
+                    records[reg_no] = {
+                        "name": name,
+                        "room_no": room_no,
+                        "email": email,
+                        "password": password,
+                        "home_state": home_state,
+                    }
+    except FileNotFoundError:
+        # File doesn't exist yet, start empty
+        pass
+
+    return records
+
+
+def save_records(records):
+    """Saves the whole dictionary back to the text file."""
+    with open(FILENAME, "w") as file:
+        for reg_no, info in records.items():
+            file.write(
+                f"{info['name']},{info['room_no']},{reg_no},{info['email']},{info['password']},{info['home_state']}\n"
+            )
+
+
+# ---------------------------------------------------------------------------
+# Helper Display Functions
+# ---------------------------------------------------------------------------
+def render_table(filtered_dict):
+    """Renders a structured table for given student records."""
+    print(f"\n{'-' * 105}")
+    print(
+        f"{'Name':<20} {'Room No':<12} {'Reg No':<15} {'Email':<35} {'Password':<25} {'Home State'}"
+    )
+    print(f"{'-' * 125}")
+    for reg_no, info in filtered_dict.items():
+        print(
+            f"{info['name']:<20} {info['room_no']:<12} {reg_no:<15} {info['email']:<35} {info['password']:<25} {info['home_state']}"
+        )
+    print(f"{'-' * 125}")
+
+
+# ---------------------------------------------------------------------------
+# Core System Features
+# ---------------------------------------------------------------------------
+def add_student(records):
+    """Adds a new student record following the specified sequence."""
+    print("\n--- Add New Student ---")
+    name = input("Enter Student Name: ").strip()
+    room_no = input("Enter Hostel Room Number (e.g. 7B 612): ").strip()
+    reg_no = input("Enter Registration Number: ").strip()
+
+    if reg_no in records:
+        print(
+            f"Error: Student with Registration Number '{reg_no}' already exists!"
+        )
+        return
+
+    email = input("Enter Student Email: ").strip()
+    password = input("Enter Password of Email: ").strip()
+    home_state = input("Enter Home State: ").strip()
+
+    records[reg_no] = {
+        "name": name,
+        "room_no": room_no,
+        "email": email,
+        "password": password,
+        "home_state": home_state,
+    }
+    save_records(records)
+    print("Student record added successfully!")
+
+
+def display_students(records):
+    """Displays all student records."""
+    if not records:
+        print("No student records found.")
+        return
+
+    print("\n--- All Student Records ---")
+    render_table(records)
+
+
+def search_student(records):
+    """Searches for a student by Registration Number."""
+    print("\n--- Search Student ---")
+    reg_no = input("Enter Registration Number to search: ").strip()
+    if reg_no in records:
+        info = records[reg_no]
+        print("\nStudent Found:")
+        print(f"Name        : {info['name']}")
+        print(f"Room Number : {info['room_no']}")
+        print(f"Reg No      : {reg_no}")
+        print(f"Email       : {info['email']}")
+        print(f"Password    : {info['password']}")
+        print(f"Home State  : {info['home_state']}")
+    else:
+        print(f"Student with Registration Number '{reg_no}' not found!")
+
+
+def update_student(records):
+    """Updates existing student record."""
+    print("\n--- Update / Edit Student Record ---")
+    reg_no = input("Enter Registration Number to update: ").strip()
+
+    if reg_no not in records:
+        print("Student record not found!")
+        return
+
+    info = records[reg_no]
+    print("Leave blank and press Enter to keep current value.\n")
+
+    new_name = input(f"Enter Name [{info['name']}]: ").strip()
+    new_room = input(f"Enter Room Number [{info['room_no']}]: ").strip()
+    new_email = input(f"Enter Email [{info['email']}]: ").strip()
+    new_pass = input(f"Enter Password [{info['password']}]: ").strip()
+    new_state = input(f"Enter Home State [{info['home_state']}]: ").strip()
+
+    # Update only fields that were typed in
+    if new_name:
+        info["name"] = new_name
+    if new_room:
+        info["room_no"] = new_room
+    if new_email:
+        info["email"] = new_email
+    if new_pass:
+        info["password"] = new_pass
+    if new_state:
+        info["home_state"] = new_state
+
+    save_records(records)
+    print("Student record updated successfully!")
+
+
+def filter_students(records):
+    """Filters records by Hostel Block or Home State."""
+    if not records:
+        print("No student records found to filter.")
+        return
+
+    print("\n--- Filter Records ---")
+    print("1. Filter by Hostel Block (e.g. 7B)")
+    print("2. Filter by Home State")
+    sub_choice = input("Enter filter choice (1-2): ").strip()
+
+    matches = {}
+
+    if sub_choice == "1":
+        block = (
+            input("Enter Hostel Block to filter (e.g. 7B): ").strip().upper()
+        )
+        for r_no, info in records.items():
+            # Matches if room_no starts with or contains the block name
+            if block in info["room_no"].upper():
+                matches[r_no] = info
+
+        if matches:
+            print(f"\nStudents found in Block '{block}':")
+            render_table(matches)
+        else:
+            print(f"No students found in Block '{block}'.")
+
+    elif sub_choice == "2":
+        state = input("Enter Home State to filter: ").strip().lower()
+        for r_no, info in records.items():
+            if state in info["home_state"].lower():
+                matches[r_no] = info
+
+        if matches:
+            print(f"\nStudents from '{state.title()}':")
+            render_table(matches)
+        else:
+            print(f"No students found from state '{state}'.")
+    else:
+        print("Invalid filter option!")
+
+
+def delete_student(records):
+    """Deletes a student record by Registration Number."""
+    print("\n--- Delete Student Record ---")
+    reg_no = input("Enter Registration Number to delete: ").strip()
+    if reg_no in records:
+        del records[reg_no]
+        save_records(records)
+        print("Student record deleted successfully!")
+    else:
+        print("Student record not found!")
+
+
+# ---------------------------------------------------------------------------
+# Main Menu
+# ---------------------------------------------------------------------------
+def main():
+    """Main menu loop."""
+    records = load_records()
+    print_banner()
+
+    while True:
+        print("\n=== Main Menu ===")
+        print("1. Add Student Record")
+        print("2. Display All Students")
+        print("3. Search Student")
+        print("4. Delete Student Record")
+        print("5. Update / Edit Student Record")
+        print("6. Filter Students (by Block or State)")
+        print("7. Exit")
+
+        choice = input("\nEnter your choice (1-7): ").strip()
+
+        if choice == "1":
+            add_student(records)
+        elif choice == "2":
+            display_students(records)
+        elif choice == "3":
+            search_student(records)
+        elif choice == "4":
+            delete_student(records)
+        elif choice == "5":
+            update_student(records)
+        elif choice == "6":
+            filter_students(records)
+        elif choice == "7":
+            print("\nExiting program. Goodbye!")
+            break
+        else:
+            print("Invalid choice! Please enter a number from 1 to 7.")
+
+
+if __name__ == "__main__":
+    main()
